@@ -1,0 +1,12 @@
+{
+  "domain": "bixi",
+  "name": "Bixi",
+  "codeowners": [
+    "@benVigie"
+  ],
+  "config_flow": true,
+  "documentation": "https://github.com/benVigie/bixi",
+  "iot_class": "cloud_polling",
+  "issue_tracker": "https://github.com/benVigie/bixi/issues",
+  "version": "0.0.0"
+}

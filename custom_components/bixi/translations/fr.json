@@ -1,0 +1,21 @@
+{
+    "config": {
+        "step": {
+            "user": {
+                "description": "Choisissez les stations à surveiller",
+                "data": {
+                    "stations": "Stations",
+                    "timeout": "Fréquence de rafraîchissement (en minutes)"
+                }
+            }
+        },
+        "error": {
+            "cannot_connect": "[%key:common::config_flow::error::cannot_connect%]",
+            "no_stations": "Vous devez choisir au moins une station à surveiller",
+            "unknown": "[%key:common::config_flow::error::unknown%]"
+        },
+        "abort": {
+            "already_configured": "[%key:common::config_flow::abort::already_configured_device%]"
+        }
+    }
+}
