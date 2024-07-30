@@ -1,25 +1,36 @@
-"""Bixi Coordinator."""
+"""Bixi Coordinator. Manage the station updates."""
 
 import logging
+from dataclasses import dataclass
 from datetime import timedelta
+from typing import Any
 
 import async_timeout
 import requests
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.update_coordinator import (
     DataUpdateCoordinator,
     UpdateFailed,
 )
 
-from .const import DOMAIN
+from .const import BIXI_URL, DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
 
 
-class BixiCoordinator(DataUpdateCoordinator[any]):
-    """Bixi data coordinator."""
+@dataclass(frozen=True)
+class BixiStation:
+    """Bixi station data."""
+
+    name: str
+    docks_available: int
+    bikes_available: int
+    ebikes_available: int
+
+
+class BixiCoordinator(DataUpdateCoordinator[Any]):
+    """Bixi data coordinator class."""
 
     config_entry: ConfigEntry
 
@@ -30,64 +41,51 @@ class BixiCoordinator(DataUpdateCoordinator[any]):
         )
         self._stations = stations
 
-    async def _async_update_data(self) -> any:
+    async def _async_update_data(self) -> Any:
         """Fetch data from API endpoint."""
         try:
             async with async_timeout.timeout(10):
-                return await self.hass.async_add_executor_job(self.fetch_data2)
-                # return await self.fetch_data()
+                return await self.hass.async_add_executor_job(self.fetch_data)
         except Exception as err:
-            raise UpdateFailed(f"Error communicating with API: {err}")
+            msg = f"Error communicating with API: {err}"
+            raise UpdateFailed(msg) from err
 
-    async def fetch_data(self):
-        """Fetch data from Bixi API."""
-        client = async_get_clientsession(self.hass)
-        response = await client.get(
-            "https://layer.bicyclesharing.net/map/v1/mtl/map-inventory"
-        )
-
-        json = await response.json()
-        stations_update = []
-        for station in json["features"]:
-            # print(station["properties"]["station"])
-            if (
-                "properties" in station
-                and "station" in station["properties"]
-                and "name" in station["properties"]["station"]
-                and station["properties"]["station"]["name"] in self._stations
-                # and station["properties"]["station"]["name"]
-            ):
-                stations_update.append(station["properties"]["station"])
-        print(stations_update)
-
-    def fetch_data2(self):
-        """Fetch the update."""
+    def fetch_data(self) -> Any:
+        """Fetch the bixi updates."""
         try:
-            response = requests.get(
-                "https://layer.bicyclesharing.net/map/v1/mtl/map-inventory", timeout=10
-            )
+            response = requests.get(BIXI_URL, timeout=10)
             response.raise_for_status()
             json = response.json()
             stations_update = {}
-            for station in json["features"]:
-                # print(station["properties"]["station"])
+
+            stations_update = {
+                station["properties"]["station"]["name"]: station["properties"][
+                    "station"
+                ]
+                for station in json["features"]
                 if (
                     "properties" in station
                     and "station" in station["properties"]
                     and "name" in station["properties"]["station"]
                     and station["properties"]["station"]["name"] in self._stations
-                ):
-                    stations_update[station["properties"]["station"]["name"]] = station[
-                        "properties"
-                    ]["station"]
-            return stations_update
+                )
+            }
         except requests.HTTPError as err:
-            if err.response is not None:
-                if err.response.status_code == 401:
-                    raise Exception("Could not authorize.") from err
+            msg = "Cannot retrieve bixi update"
+            raise UpdateFailed(msg) from err
         except requests.ConnectTimeout as ex:
-            raise requests.ConnectTimeout(
-                "Connection timeout while connecting to Sanix API"
-            ) from ex
+            msg = "Connection timeout while connecting to Sanix API"
+            raise requests.ConnectTimeout(msg) from ex
         except requests.ConnectionError as ex:
-            raise Exception("Connection error while connecting to Sanix API") from ex
+            msg = "Connection error while connecting to Sanix API"
+            raise UpdateFailed(msg) from ex
+        else:
+            return stations_update
+
+    def _parse_bixi_data_to_create_station(self, bixi_data: dict) -> BixiStation:
+        return BixiStation(
+            name=bixi_data.get("name", "unknown"),
+            docks_available=bixi_data.get("docks_available", 0),
+            bikes_available=bixi_data.get("bikes_available", 0),
+            ebikes_available=bixi_data.get("ebikes_available", 0),
+        )

@@ -2,33 +2,35 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable
 from dataclasses import dataclass
+from typing import TYPE_CHECKING, Any
 
-from homeassistant.components.sensor import (
-    DOMAIN as SENSOR_DOMAIN,
-)
 from homeassistant.components.sensor import (
     SensorEntity,
     SensorEntityDescription,
+)
+from homeassistant.components.sensor.const import (
+    DOMAIN as SENSOR_DOMAIN,
+)
+from homeassistant.components.sensor.const import (
     SensorStateClass,
 )
-from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import EntityCategory
-from homeassistant.core import HomeAssistant
 from homeassistant.helpers.device_registry import DeviceEntryType, DeviceInfo
-from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .bixi_helper import get_uid_for_station_name
 from .const import DOMAIN
-from .coordinator import BixiCoordinator
+from .coordinator import BixiCoordinator, BixiStation
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from homeassistant.config_entries import ConfigEntry
+    from homeassistant.core import HomeAssistant
+    from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 ENTITY_ID_SENSOR_FORMAT = SENSOR_DOMAIN + ".bixi_{}"
-
-
-class BixiStation:
-    name: str
 
 
 @dataclass(kw_only=True, frozen=True)
@@ -48,14 +50,14 @@ def _create_sensors_for_station(
             translation_key="station_name",
             name=f"{station_id} Station Name",
             icon="mdi:tag",
-            value_fn=lambda data: data.get("name", "unknown"),
+            value_fn=lambda data: data.name,
         ),
         BixiSensorEntityDescription(
             key=f"{station_id}_docks",
             translation_key="docks",
             name=f"{station_id} Available docks",
             icon="mdi:locker",
-            value_fn=lambda data: data.get("docks_available", 0),
+            value_fn=lambda data: data.docks_available,
             state_class=SensorStateClass.MEASUREMENT,
         ),
         BixiSensorEntityDescription(
@@ -63,7 +65,7 @@ def _create_sensors_for_station(
             translation_key="bikes",
             name=f"{station_id} Bikes",
             icon="mdi:bicycle",
-            value_fn=lambda data: data.get("bikes_available", 0),
+            value_fn=lambda data: data.bikes_available,
             state_class=SensorStateClass.MEASUREMENT,
         ),
         BixiSensorEntityDescription(
@@ -71,7 +73,7 @@ def _create_sensors_for_station(
             translation_key="e-bikes",
             name=f"{station_id} E-bikes",
             icon="mdi:bicycle-electric",
-            value_fn=lambda data: data.get("ebikes_available", 0),
+            value_fn=lambda data: data.ebikes_available,
             state_class=SensorStateClass.MEASUREMENT,
         ),
     )
@@ -91,16 +93,10 @@ async def async_setup_entry(
         sensors.extend(newitems)
 
     async_add_entities(sensors)
-    # async_add_entities(
-    #     [
-    #         BixiSensor(coordinator, bixi_stations, description, entry.entry_id)
-    #         for description in SENSOR_TYPES
-    #     ]
-    # )
 
 
 def _create_station_sensors(
-    coordinator: any, station_name: str, entry_id: str
+    coordinator: Any, station_name: str, entry_id: str
 ) -> list[BixiSensor]:
     return [
         BixiSensor(coordinator, station_name, description, entry_id)

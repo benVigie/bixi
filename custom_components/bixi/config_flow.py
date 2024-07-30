@@ -11,8 +11,8 @@ from homeassistant.config_entries import ConfigFlow, ConfigFlowResult
 from homeassistant.const import CONF_TIMEOUT
 from homeassistant.helpers.selector import selector
 
-from .bixi_helper import CannotConnect, fetch_bixi_station_names
-from .const import CONF_STATIONS, DOMAIN
+from .bixi_helper import CannotConnectError, fetch_bixi_station_names
+from .const import CONF_STATIONS, DEFAULT_TIMEOUT, DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -44,18 +44,17 @@ class BixiConfigFlow(ConfigFlow, domain=DOMAIN):
         try:
             stations = await fetch_bixi_station_names(self.hass)
             data_schema = {
-                vol.Required(CONF_TIMEOUT, default=5): cv.positive_int,
-            }
-
-            data_schema[CONF_STATIONS] = selector(
-                {
-                    "select": {
-                        "options": stations,
-                        "multiple": True,
+                CONF_STATIONS: selector(
+                    {
+                        "select": {
+                            "options": stations,
+                            "multiple": True,
+                        }
                     }
-                }
-            )
-        except CannotConnect:
+                ),
+                vol.Required(CONF_TIMEOUT, default=DEFAULT_TIMEOUT): cv.positive_int,  # type: ignore  # noqa: PGH003
+            }
+        except CannotConnectError:
             errors["base"] = "cannot_connect"
 
         return self.async_show_form(
