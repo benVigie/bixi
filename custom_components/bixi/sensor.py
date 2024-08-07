@@ -21,7 +21,7 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .bixi_helper import get_uid_for_station_name
 from .const import DOMAIN
-from .coordinator import BixiCoordinator, BixiStation
+from .coordinator import BixiCoordinator
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -29,6 +29,8 @@ if TYPE_CHECKING:
     from homeassistant.config_entries import ConfigEntry
     from homeassistant.core import HomeAssistant
     from homeassistant.helpers.entity_platform import AddEntitiesCallback
+
+    from .model import BixiStation
 
 ENTITY_ID_SENSOR_FORMAT = SENSOR_DOMAIN + ".bixi_{}"
 
@@ -134,8 +136,10 @@ class BixiSensor(CoordinatorEntity[BixiCoordinator], SensorEntity):
         )
 
     @property
-    def native_value(self) -> int | str:
+    def native_value(self) -> int | str | None:
         """Return value of sensor."""
-        return self.entity_description.value_fn(
-            self.coordinator.data[self.station_name]
-        )
+        if self.coordinator.data[self.station_name]:
+            return self.entity_description.value_fn(
+                self.coordinator.data[self.station_name]
+            )
+        return None
