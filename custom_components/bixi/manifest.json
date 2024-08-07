@@ -8,5 +8,5 @@
   "documentation": "https://github.com/benVigie/bixi",
   "iot_class": "cloud_polling",
   "issue_tracker": "https://github.com/benVigie/bixi/issues",
-  "version": "0.0.0"
+  "version": "1.0.0"
 }
