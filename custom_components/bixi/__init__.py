@@ -35,7 +35,9 @@ type BixiConfigEntry = ConfigEntry[BixiData]
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """Set up this integration using UI."""
     # Setup coordinator
-    coordinator = BixiCoordinator(hass, entry.data["stations"])
+    coordinator = BixiCoordinator(
+        hass, entry.data["stations"], entry.data["scan_interval"]
+    )
     await coordinator.async_config_entry_first_refresh()
     hass.data.setdefault(DOMAIN, {})[entry.title] = coordinator
 
