@@ -5,13 +5,14 @@
                 "description": "Choose your stations to track",
                 "data": {
                     "stations": "Stations",
-                    "timeout": "Polling rate (minutes)"
+                    "scan_interval": "Polling update interval (minutes)"
                 }
             }
         },
         "error": {
             "cannot_connect": "[%key:common::config_flow::error::cannot_connect%]",
             "no_stations": "You should choose at least 1 station to track",
+            "invalid_scan_interval": "Polling update should be between 5 and 60 minutes",
             "unknown": "[%key:common::config_flow::error::unknown%]"
         },
         "abort": {

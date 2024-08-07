@@ -2,19 +2,22 @@
 
 from __future__ import annotations
 
-import logging
 from typing import Any
 
 import homeassistant.helpers.config_validation as cv
 import voluptuous as vol
 from homeassistant.config_entries import ConfigFlow, ConfigFlowResult
-from homeassistant.const import CONF_TIMEOUT
+from homeassistant.const import CONF_SCAN_INTERVAL
 from homeassistant.helpers.selector import selector
 
 from .bixi_helper import CannotConnectError, fetch_bixi_station_names
-from .const import CONF_STATIONS, DEFAULT_TIMEOUT, DOMAIN
-
-_LOGGER = logging.getLogger(__name__)
+from .const import (
+    CONF_STATIONS,
+    DEFAULT_SCAN_INTERVAL,
+    DOMAIN,
+    MAX_SCAN_INTERVAL,
+    MIN_SCAN_INTERVAL,
+)
 
 
 class BixiConfigFlow(ConfigFlow, domain=DOMAIN):
@@ -35,7 +38,14 @@ class BixiConfigFlow(ConfigFlow, domain=DOMAIN):
                 or len(user_input[CONF_STATIONS]) == 0
             ):
                 errors[CONF_STATIONS] = "no_stations"
-            else:
+            if (
+                user_input.get(CONF_SCAN_INTERVAL, None) is None
+                or user_input[CONF_SCAN_INTERVAL] < MIN_SCAN_INTERVAL
+                or user_input[CONF_SCAN_INTERVAL] > MAX_SCAN_INTERVAL
+            ):
+                errors[CONF_SCAN_INTERVAL] = "invalid_scan_interval"
+            # Save config if everything seems fine
+            if len(errors) == 0:
                 return self.async_create_entry(
                     title=f"Bixi Stations ({', '.join(user_input[CONF_STATIONS])})",
                     data=user_input,
@@ -54,7 +64,10 @@ class BixiConfigFlow(ConfigFlow, domain=DOMAIN):
                         }
                     }
                 ),
-                vol.Required(CONF_TIMEOUT, default=DEFAULT_TIMEOUT): cv.positive_int,  # type: ignore  # noqa: PGH003
+                vol.Required(
+                    CONF_SCAN_INTERVAL,
+                    default=DEFAULT_SCAN_INTERVAL,  # type: ignore  # noqa: PGH003
+                ): cv.positive_int,
             }
         except CannotConnectError:
             errors["base"] = "cannot_connect"

@@ -5,13 +5,14 @@
                 "description": "Choisissez les stations à surveiller",
                 "data": {
                     "stations": "Stations",
-                    "timeout": "Fréquence de rafraîchissement (en minutes)"
+                    "scan_interval": "Fréquence de rafraîchissement (en minutes)"
                 }
             }
         },
         "error": {
             "cannot_connect": "[%key:common::config_flow::error::cannot_connect%]",
             "no_stations": "Vous devez choisir au moins une station à surveiller",
+            "invalid_scan_interval": "La fréquence de rafraîchissement des stations doit être entre 5 et 60 minutes",
             "unknown": "[%key:common::config_flow::error::unknown%]"
         },
         "abort": {
