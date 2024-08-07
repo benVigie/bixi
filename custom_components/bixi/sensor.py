@@ -50,14 +50,14 @@ def _create_sensors_for_station(
         BixiSensorEntityDescription(
             key=f"{station_id}_name",
             translation_key="station_name",
-            name=f"{station_id} Station Name",
-            icon="mdi:tag",
+            name="Station Name",
+            icon="mdi:tag-outline",
             value_fn=lambda data: data.name,
         ),
         BixiSensorEntityDescription(
             key=f"{station_id}_docks",
             translation_key="docks",
-            name=f"{station_id} Available docks",
+            name="Available docks",
             icon="mdi:locker",
             value_fn=lambda data: data.docks_available,
             state_class=SensorStateClass.MEASUREMENT,
@@ -65,7 +65,7 @@ def _create_sensors_for_station(
         BixiSensorEntityDescription(
             key=f"{station_id}_bikes",
             translation_key="bikes",
-            name=f"{station_id} Bikes",
+            name="Bikes",
             icon="mdi:bicycle",
             value_fn=lambda data: data.bikes_available,
             state_class=SensorStateClass.MEASUREMENT,
@@ -73,7 +73,7 @@ def _create_sensors_for_station(
         BixiSensorEntityDescription(
             key=f"{station_id}_e-bikes",
             translation_key="e-bikes",
-            name=f"{station_id} E-bikes",
+            name="E-bikes",
             icon="mdi:bicycle-electric",
             value_fn=lambda data: data.ebikes_available,
             state_class=SensorStateClass.MEASUREMENT,
@@ -84,24 +84,22 @@ def _create_sensors_for_station(
 async def async_setup_entry(
     hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback
 ) -> None:
-    """Set up Sun sensor platform."""
-    coordinator = hass.data[DOMAIN][entry.entry_id]
+    """Set up Bixi sensor platform."""
+    coordinator = hass.data[DOMAIN][entry.title]
     bixi_stations = entry.data["stations"]
 
     # Create all needed sensors for each stations
     sensors: list[BixiSensor] = []
     for station in bixi_stations:
-        newitems = _create_station_sensors(coordinator, station, entry.entry_id)
+        newitems = _create_station_sensors(coordinator, station)
         sensors.extend(newitems)
 
     async_add_entities(sensors)
 
 
-def _create_station_sensors(
-    coordinator: Any, station_name: str, entry_id: str
-) -> list[BixiSensor]:
+def _create_station_sensors(coordinator: Any, station_name: str) -> list[BixiSensor]:
     return [
-        BixiSensor(coordinator, station_name, description, entry_id)
+        BixiSensor(coordinator, station_name, description)
         for description in _create_sensors_for_station(station_name)
     ]
 
@@ -119,7 +117,6 @@ class BixiSensor(CoordinatorEntity[BixiCoordinator], SensorEntity):
         coordinator: BixiCoordinator,
         station_name: str,
         entity_description: BixiSensorEntityDescription,
-        entry_id: str,
     ) -> None:
         """Initiate Bixi Sensor."""
         # Pass coordinator to CoordinatorEntity.
@@ -127,11 +124,11 @@ class BixiSensor(CoordinatorEntity[BixiCoordinator], SensorEntity):
 
         self.entity_description = entity_description
         self.entity_id = ENTITY_ID_SENSOR_FORMAT.format(entity_description.key)
-        self._attr_unique_id = f"{entry_id}-{entity_description.key}"
+        self._attr_unique_id = f"{station_name}-{entity_description.key}"
         self.station_name = station_name
         self._attr_device_info = DeviceInfo(
-            name=entry_id,
-            identifiers={(DOMAIN, entry_id)},
+            name=station_name,
+            identifiers={(DOMAIN, station_name)},
             entry_type=DeviceEntryType.SERVICE,
         )
 
